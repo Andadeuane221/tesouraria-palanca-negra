@@ -1,0 +1,70 @@
+name: PythonAnywhere Auto-Renew
+
+on:
+  schedule:
+    # Agenda a execução automática para o dia 1 e dia 15 de cada mês às 05:00 UTC
+    - cron: '0 5 1,15 * *'
+  workflow_dispatch: # Permite que você acione o botão manualmente pelo GitHub se quiser
+
+jobs:
+  renew_app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar o interpretador Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar o Selenium
+        run: pip install selenium webdriver-manager
+
+      - name: Executar script de clique automático
+        env:
+          PA_USERNAME: ${{ secrets.PA_USERNAME }}
+          PA_PASSWORD: ${{ secrets.PA_PASSWORD }}
+        run: |
+          python -c "
+          import os, time
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+          from webdriver_manager.chrome import ChromeDriverManager
+          from selenium.webdriver.chrome.service import Service
+
+          options = Options()
+          options.add_argument('--headless')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          
+          driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+          try:
+              print('Fazendo login seguro no PythonAnywhere...')
+              driver.get('https://www.pythonanywhere.com/login/')
+              driver.find_element(By.ID, 'id_auth-username').send_keys(os.environ['PA_USERNAME'])
+              driver.find_element(By.ID, 'id_auth-password').send_keys(os.environ['PA_PASSWORD'])
+              driver.find_element(By.ID, 'id_next').click()
+              time.sleep(5)
+              
+              print('Acessando aba Web do usuário...')
+              driver.get(f'https://www.pythonanywhere.com/user/{os.environ[\"PA_USERNAME\"]}/webapps/')
+              time.sleep(5)
+              
+              inputs = driver.find_elements(By.XPATH, \"//input[@value='Extend']\")
+              buttons = driver.find_elements(By.XPATH, \"//button[contains(text(), 'Extend')]\")
+              botoes_renovacao = inputs + buttons
+              
+              if botoes_renovacao:
+                  for botao in botoes_renovacao:
+                      botao.click()
+                      print('✅ Sucesso: O aplicativo foi estendido por mais 30 dias de forma automática!')
+                      time.sleep(2)
+              else:
+                  print('⚠️ Aviso: Botão de extensão não encontrado. O aplicativo pode já estar com o prazo cheio.')
+          except Exception as e:
+              print(f'❌ Falha ao tentar renovar: {e}')
+          finally:
+              driver.quit()
+          "
