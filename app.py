@@ -4,7 +4,9 @@ import io
 import sqlite3
 import unicodedata
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # ReportLab imports for professional PDF generation
 from reportlab.lib.pagesizes import A4
@@ -51,7 +53,23 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
+            )
+        """)
         conn.commit()
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            flash('Por favor, faça login para acessar a tesouraria.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def clean_string(text):
     """Removes accents, special characters, converts to uppercase and replaces spaces with hyphens."""
@@ -66,12 +84,11 @@ def clean_string(text):
     cleaned = re.sub(r'[\s-]+', '-', cleaned)
     return cleaned.strip('-').upper()
 
-def generate_reference_code(tesoureiro, nome):
+def generate_reference_code(nome):
     """Generates a unique reference code following YYYYMMDD-HHMMSS-TESOUREIRO-NOME rules."""
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    clean_t = clean_string(tesoureiro)
     clean_n = clean_string(nome)
-    return f"{timestamp}-{clean_t}-{clean_n}"
+    return f"{timestamp}-{clean_n}"
 
 def format_currency(value):
     """Formats a float value to the exact requested format: AOA 1.234,56"""
@@ -85,8 +102,36 @@ def utility_processor():
 # ==========================================
 # CORE CONTROLLERS / ROUTES
 # ==========================================
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        # Verifica se o usuário existe e se a senha está correta
+        if user and check_password_hash(user[2], password):
+            session['logged_in'] = True
+            session['username'] = username
+            return redirect(url_for('index')) # Mude 'index' para o nome da sua rota do painel principal
+        else:
+            flash('Usuário ou senha incorretos!', 'danger')
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Você saiu do sistema com segurança.', 'success')
+    return redirect(url_for('login'))
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     if request.method == "POST":
         # Data Retrieval & Validation
@@ -110,7 +155,7 @@ def index():
             return redirect(url_for("index"))
 
         # Unique reference generation
-        reference_code = generate_reference_code(tesoureiro, nome)
+        reference_code = generate_reference_code(nome)
 
         # Database Insertion
         try:

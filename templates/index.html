@@ -256,7 +256,7 @@
                 const pad = (n) => String(n).padStart(2, '0');
                 const yyyymmdd = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate());
                 const hhmmss = pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
-                document.getElementById("prevReference").innerText = `${yyyymmdd}-${hhmmss}-${cleanString(tesoureiro)}-${cleanString(nome)}`;
+                document.getElementById("prevReference").innerText = `${yyyymmdd}-${hhmmss}-${cleanString(nome)}`;
             } else {
                 document.getElementById("prevReference").innerText = "- AGUARDANDO DADOS -";
             }
