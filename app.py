@@ -240,6 +240,23 @@ def recibos_history():
         total_pages=total_pages
     )
 
+@app.route('/deletar_recibo/<int:id>', methods=['POST'])
+@login_required
+def deletar_recibo(id):
+    try:
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM recibos WHERE id = ?", (id,))
+        conn.commit()
+        conn.close()
+        
+        flash('✅ Recibo eliminado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'❌ Erro ao tentar eliminar o recibo: {e}', 'danger')
+        
+    return redirect(url_for('recibos_history'))
+
 @app.route("/download/<int:receipt_id>")
 def download_pdf(receipt_id):
     with get_db_connection() as conn:
