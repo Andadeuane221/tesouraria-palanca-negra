@@ -6,6 +6,10 @@ on:
     - cron: '0 5 1,15 * *'
   workflow_dispatch: # Permite que você acione o botão manualmente pelo GitHub se quiser
 
+# 🎯 Força o GitHub a usar o Node 24 atualizado para evitar o aviso de depreciação
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   renew_app:
     runs-on: ubuntu-latest
@@ -54,7 +58,6 @@ jobs:
               driver.get(f"https://www.pythonanywhere.com/user/{os.environ['PA_USERNAME']}/webapps/")
               time.sleep(5)
               
-              # Seletores ajustados para o texto real do botão
               inputs = driver.find_elements(By.XPATH, "//input[@value='Run until 1 month from today']")
               buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'Run until 1 month from today')]")
               botoes_renovacao = inputs + buttons
