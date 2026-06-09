@@ -26,8 +26,9 @@ jobs:
           PA_USERNAME: ${{ secrets.PA_USERNAME }}
           PA_PASSWORD: ${{ secrets.PA_PASSWORD }}
         run: |
-          python -c "
-          import os, time
+          python - <<EOF
+          import os
+          import time
           from selenium import webdriver
           from selenium.webdriver.common.by import By
           from selenium.webdriver.chrome.options import Options
@@ -40,6 +41,7 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           
           driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+          
           try:
               print('Fazendo login seguro no PythonAnywhere...')
               driver.get('https://www.pythonanywhere.com/login/')
@@ -49,11 +51,12 @@ jobs:
               time.sleep(5)
               
               print('Acessando aba Web do usuário...')
-              driver.get(f'https://www.pythonanywhere.com/user/{os.environ[\"PA_USERNAME\"]}/webapps/')
+              driver.get(f"https://www.pythonanywhere.com/user/{os.environ['PA_USERNAME']}/webapps/")
               time.sleep(5)
               
-              inputs = driver.find_elements(By.XPATH, \"//input[@value='Extend']\")
-              buttons = driver.find_elements(By.XPATH, \"//button[contains(text(), 'Extend')]\")
+              # Seletores ajustados para o texto real do botão
+              inputs = driver.find_elements(By.XPATH, "//input[@value='Run until 1 month from today']")
+              buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'Run until 1 month from today')]")
               botoes_renovacao = inputs + buttons
               
               if botoes_renovacao:
@@ -67,4 +70,4 @@ jobs:
               print(f'❌ Falha ao tentar renovar: {e}')
           finally:
               driver.quit()
-          "
+          EOF
