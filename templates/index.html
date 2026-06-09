@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4 g-3 no-print">
+    <div class="col-md-4">
+        <div class="card shadow-sm card-stats h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-muted fw-semibold text-uppercase mb-1" style="font-size: 0.75rem;">Total Arrecadado</h6>
+                    <h3 class="fw-bold text-dark mb-0">{{ format_currency(total_arrecadado) }}</h3>
+                </div>
+                <div class="bg-light p-3 rounded-circle text-primary">
+                    <i class="bi bi-cash-coin fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm card-stats h-100" style="border-left-color: #3182CE;">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-muted fw-semibold text-uppercase mb-1" style="font-size: 0.75rem;">Mês Atual</h6>
+                    <h3 class="fw-bold text-dark mb-0">{{ format_currency(arrecadacao_mes) }}</h3>
+                </div>
+                <div class="bg-light p-3 rounded-circle text-info">
+                    <i class="bi bi-calendar-check fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm card-stats h-100" style="border-left-color: #38A169;">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-muted fw-semibold text-uppercase mb-1" style="font-size: 0.75rem;">Recibos Emitidos</h6>
+                    <h3 class="fw-bold text-dark mb-0">{{ num_recibos }}</h3>
+                </div>
+                <div class="bg-light p-3 rounded-circle text-success">
+                    <i class="bi bi-file-earmark-text fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6 no-print">
+        <div class="card shadow-sm border-0">
+            <div class="card-header gradient-header py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Emitir Novo Recibo</h5>
+            </div>
+            <div class="card-body p-4">
+                <form id="receiptForm" method="POST" action="{{ url_for('index') }}" class="needs-validation" novalidate>
+                    
+                    <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="bi bi-person me-2"></i>Dados do Membro</h6>
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome Completo da Pessoa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nome" name="nome" required placeholder="Ex: Maria José">
+                    </div>
+
+                    <h6 class="text-primary border-bottom pb-2 mb-3 mt-4 fw-bold"><i class="bi bi-credit-card me-2"></i>Pagamento</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="periodo" class="form-label">Período de Referência <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="periodo" name="periodo" required placeholder="Ex: Janeiro 2026, 1º Trimestre 2026">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="valor" class="form-label">Valor Pago (AOA) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light fw-semibold">AOA</span>
+                                <input type="number" class="form-control" id="valor" name="valor" min="0" step="0.01" required placeholder="0,00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary border-bottom pb-2 mb-3 mt-4 fw-bold"><i class="bi bi-building-gear me-2"></i>Administração</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tesoureiro" class="form-label">Nome do Tesoureiro <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="tesoureiro" name="tesoureiro" required placeholder="Ex: João Silva">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departamento" class="form-label">Departamento Responsável</label>
+                            <input type="text" class="form-control" id="departamento" name="departamento" value="{{ default_dept }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        <textarea class="form-control" id="observacoes" name="observacoes" rows="2" placeholder="Informações adicionais do pagamento..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2.5 fw-bold text-uppercase shadow">
+                        <i class="bi bi-printer-fill me-2"></i>Gerar e Imprimir Recibo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 print-full">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center no-print">
+                <h5 class="card-title mb-0 fw-bold fs-6"><i class="bi bi-eye me-2"></i>Visualização em Tempo Real</h5>
+                <span class="badge bg-secondary text-uppercase font-monospace" style="font-size: 0.7rem;">Documento não salvo</span>
+            </div>
+            <div class="card-body p-4 bg-light">
+                <div class="receipt-preview-box p-4 bg-white shadow-sm">
+                    <div class="text-center mb-3">
+                        <div class="d-flex align-items-center justify-content-center mb-2">
+							{% if logo_exists %}
+								<img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="me-2" style="height: 50px; width: auto;">
+							{% else %}
+								<i class="bi bi-shield-shaded text-primary fs-2 me-2"></i>
+							{% endif %}
+							<h5 class="fw-bold text-uppercase mb-0 text-dark" style="font-size: 1.15rem; letter-spacing: 0.5px;">Clube de Desbravadores Palanca Negra</h5>
+						</div>
+                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem; border-top: 1px solid #E2E8F0; padding-top: 2px;">
+                            Departamento de <span id="prevDepartamento">Tesouraria</span>
+                        </span>
+                    </div>
+
+                    <hr class="my-3 text-secondary">
+
+                    <div class="p-2 mb-4 bg-light rounded text-dark" style="font-size: 0.85rem;">
+                        <div class="mb-1"><strong>Ref:</strong> <span id="prevReference" class="text-muted font-monospace">- AGUARDANDO DADOS -</span></div>
+                        <div><strong>Emissão:</strong> <span class="text-muted" id="prevDateTime">Agora mesmo</span></div>
+                    </div>
+
+                    <h5 class="fw-bold mb-3 text-dark text-center" style="font-size: 1rem; letter-spacing: 1px;">RECIBO DE PAGAMENTO</h5>
+
+                    <div class="mb-4" style="font-size: 0.95rem;">
+                        <div class="row py-2 border-bottom">
+                            <div class="col-4 text-muted">Membro:</div>
+                            <div class="col-8 fw-semibold text-dark" id="prevNome">-</div>
+                        </div>
+                        <div class="row py-2 border-bottom">
+                            <div class="col-4 text-muted">Período:</div>
+                            <div class="col-8 text-dark" id="prevPeriodo">-</div>
+                        </div>
+                        <div class="row py-2 border-bottom">
+                            <div class="col-4 text-muted">Valor Pago:</div>
+                            <div class="col-8 fw-bold text-primary fs-5" id="prevValor">AOA 0,00</div>
+                        </div>
+                        <div class="row py-2" id="prevObsRow" style="display:none;">
+                            <div class="col-4 text-muted">Obs:</div>
+                            <div class="col-8 text-muted fst-italic" id="prevObservacoes">-</div>
+                        </div>
+                    </div>
+
+                    <p class="text-dark mb-5 text-center px-2" style="font-size: 0.85rem; line-height: 1.5;">
+                        "Declaramos que recebemos do membro acima identificado o valor indicado neste recibo referente ao período mencionado."
+                    </p>
+
+                    <div class="text-center mt-5 mb-3 pt-3">
+                        <div class="mx-auto border-top border-dark text-dark" style="width: 250px; font-size: 0.9rem;">
+                            <div class="fw-bold mt-1">Assinatura do Tesoureiro</div>
+                            <div class="text-muted" id="prevTesoureiro" style="font-size: 0.85rem;">-</div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4 border-top pt-2" style="font-size: 0.7rem; color: #A0AEC0;">
+                        Documento gerado eletronicamente pelo Sistema de Tesouraria do Clube de Desbravadores Palanca Negra.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5 no-print">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-clock-history me-2"></i>Últimos 10 Recibos Emitidos</h5>
+                <a href="{{ url_for('recibos_history') }}" class="btn btn-outline-primary btn-sm fw-bold">Ver Histórico Completo</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary">
+                        <tr>
+                            <th>Referência</th>
+                            <th>Membro</th>
+                            <th>Período</th>
+                            <th>Valor</th>
+                            <th>Tesoureiro</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in ultimos_recibos %}
+                        <tr>
+                            <td class="font-monospace small fw-bold">{{ r.reference_code }}</td>
+                            <td>{{ r.nome }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ r.periodo }}</span></td>
+                            <td class="fw-bold text-primary">{{ format_currency(r.valor) }}</td>
+                            <td class="text-muted">{{ r.tesoureiro }}</td>
+                            <td class="text-center">
+                                <a href="{{ url_for('download_pdf', receipt_id=r.id) }}" class="btn btn-sm btn-light border text-primary" title="Imprimir PDF" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum registro de recibo emitido no sistema até o momento.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const fields = ['nome', 'periodo', 'valor', 'tesoureiro', 'departamento', 'observacoes'];
+        
+        function cleanString(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                      .replace(/[^a-zA-Z0-9\s-]/g, "")
+                      .trim().replace(/[\s-]+/g, "-").toUpperCase();
+        }
+
+        function formatCurrencyInput(val) {
+            let parsed = parseFloat(val);
+            if (isNaN(parsed) || parsed < 0) return "AOA 0,00";
+            return "AOA " + parsed.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function updatePreview() {
+            const nome = document.getElementById("nome").value.trim();
+            const periodo = document.getElementById("periodo").value.trim();
+            const valor = document.getElementById("valor").value.trim();
+            const tesoureiro = document.getElementById("tesoureiro").value.trim();
+            const departamento = document.getElementById("departamento").value.trim();
+            const observacoes = document.getElementById("observacoes").value.trim();
+
+            document.getElementById("prevNome").innerText = nome || "-";
+            document.getElementById("prevPeriodo").innerText = periodo || "-";
+            document.getElementById("prevValor").innerText = formatCurrencyInput(valor);
+            document.getElementById("prevTesoureiro").innerText = tesoureiro || "-";
+            document.getElementById("prevDepartamento").innerText = departamento || "Tesouraria";
+            
+            if(observacoes) {
+                document.getElementById("prevObservacoes").innerText = observacoes;
+                document.getElementById("prevObsRow").style.display = "flex";
+            } else {
+                document.getElementById("prevObsRow").style.display = "none";
+            }
+
+            // Realtime pseudo-reference compilation logic configuration layout matches backend architecture standards
+            if(tesoureiro && nome) {
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                const yyyymmdd = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate());
+                const hhmmss = pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+                document.getElementById("prevReference").innerText = `${yyyymmdd}-${hhmmss}-${cleanString(tesoureiro)}-${cleanString(nome)}`;
+            } else {
+                document.getElementById("prevReference").innerText = "- AGUARDANDO DADOS -";
+            }
+        }
+
+        fields.forEach(id => {
+            document.getElementById(id).addEventListener("input", updatePreview);
+        });
+
+        // Bootstrap Native Form Client side UI protection validation execution engine pipeline
+        const form = document.getElementById('receiptForm');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+</script>
+{% endblock %}
