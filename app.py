@@ -199,6 +199,7 @@ def index():
     )
 
 @app.route("/recibos")
+@login_required
 def recibos_history():
     search = request.args.get("search", "").strip()
     filter_month = request.args.get("month", "").strip() # Format Expected: YYYY-MM
@@ -258,6 +259,7 @@ def deletar_recibo(id):
     return redirect(url_for('recibos_history'))
 
 @app.route("/download/<int:receipt_id>")
+@login_required
 def download_pdf(receipt_id):
     with get_db_connection() as conn:
         receipt = conn.execute("SELECT * FROM recibos WHERE id = ?", (receipt_id,)).fetchone()
@@ -422,6 +424,7 @@ def download_pdf(receipt_id):
     )
 
 @app.route("/export/<string:export_type>")
+@login_required
 def export_data(export_type):
     with get_db_connection() as conn:
         df = pd.read_sql_query("SELECT * FROM recibos ORDER BY created_at DESC", conn)
